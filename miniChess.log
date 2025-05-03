@@ -3,3 +3,9 @@
 2025-05-03 15:30:13 - [INFO] - max_turn set = 100
 2025-05-03 15:30:23 - [INFO] - Game Existed
 2025-05-03 15:43:58 - [INFO] - max_turn set = 100
+2025-05-03 16:08:06 - [INFO] - max_turn set = 100
+2025-05-03 16:08:06 - [INFO] - max_time: 5, heuristic: e0, alpha_beta: False
+2025-05-03 16:08:51 - [INFO] - max_turn set = 10
+2025-05-03 16:08:51 - [INFO] - max_time: 5, heuristic: e0, alpha_beta: False
+2025-05-03 18:28:52 - [INFO] - max_turn set = 100
+2025-05-03 18:30:02 - [INFO] - max_turn set = 5

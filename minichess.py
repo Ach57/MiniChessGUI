@@ -161,19 +161,62 @@ class Menu:
             if mode == "Player vs Player": # Start player vs player
                 self.root.destroy()
                 root = tk.Tk()
-                game = ChessGUI(root)
+                game = ChessGUI(root, player1="Player", player2="Player")
                 root.mainloop()
             if "AI" in mode:
                 max_time = self.max_time_entry.get()
                 heuristic = self.heuristic_var.get()
                 alpha_beta = self.alpha_beta_var.get()
                 custom_logger.info(f"max_time: {max_time}, heuristic: {heuristic}, alpha_beta: {alpha_beta}")
-                
+                if mode =="Player vs AI":
+                    self.root.destroy()
+                    root = tk.Tk()
+                    game = playerVsAi(root)
+                    root.mainloop()
                 
 
+class playerVsAi:
+    def __init__(self, root:tk.Tk):
+        self.root = root
+        self.root.title("Mini Chess Game")
+        
+        self.headerLabel = tk.Label(master=self.root, text='Welcome to Mini Chess Game', font = ('Arial', 36))
+        self.headerLabel.grid(row = 0, columnspan=5)
+        
+        self.buttons = [[None for _ in range(5)] for _ in range(5)]
+        self.selected_piece = None
+        self.turnLabel = tk.Label(master=self.root, text = "", font = ('Arial', 24))
+        self.create_board()
+    
+    def create_board(self):
+        for i in range(5):
+            for j in range(5):
+                piece = state['board'][i][j]
+                btn = tk.Button(self.root, text=PIECES[piece], font = ("Arial", 36), highlightbackground="white", 
+                                width=4, height=2)
+                btn.grid(row = i+1, column= j)
+                self.buttons[i][j] = btn
+            
+            
+        self.turnLabel.config(text = f"{state['turn'].upper()} TURN")
+        self.turnLabel.grid(row = 6, columnspan=5)
+    
+    def on_click(self, x, y):
+        piece = state['board'][x][y]# get the piece of the board
+        return
+        
+        
 
 class ChessGUI:
-    def __init__(self, root):
+    def __init__(self, root: tk.Tk, player1: str, player2: str, heuristic: str = None, alpha_beta:bool = None):
+        ''' Game Information '''
+        self.player1= player1
+        self.player2 = player2
+        self.heuristic = heuristic
+        self.alpha_beta = alpha_beta
+        
+        
+        ''' GUI '''
         self.root = root
         self.root.title("Mini Chess Game")
         
@@ -329,6 +372,9 @@ class ChessGUI:
                             valid_moves.append(((row, col), (end_row, end_col)))
                 
         return valid_moves
+
+
+
     
 
 
