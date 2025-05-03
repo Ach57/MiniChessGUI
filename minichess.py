@@ -1,12 +1,17 @@
+'''-------------  GUI Libraries ----------------'''
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
+'''-----------------------------------------------------'''
+
+'''-------------  Pieces Configuration ----------------'''
 from pieces.king import king_moves
 from pieces.queen import queen_moves
 from pieces.knight import knight_moves
 from pieces.pawn import pawn_moves, promote_pawn
 from pieces.bishop import bishop_moves
-from mini_chess_logger import MiniChessLogger
+
+'''-----------------------------------------------------'''
 
 import logging
 import colorlog
@@ -117,23 +122,7 @@ class Menu:
 
         # Start button
         self.start_button = tk.Button(root, text="Start Game", font=('Arial', 14), command=self.start_game)
-        self.start_button.grid(row=10, column=0, columnspan=2, pady=20)
-
-    def start_game(self):
-        mode = self.mode_var.get() 
-        
-        if mode =="Exit":
-            custom_logger.info("Game Existed")
-            self.root.quit()
-        else:
-            max_turn = self.max_turns_entry.get()
-            custom_logger.info(f"max_turn set = {max_turn}")
-            if "AI" in mode:
-                max_time = self.max_time_entry.get()
-                heuristic = self.heuristic_var.get()
-                alpha_beta = self.alpha_beta_var.get()
-                custom_logger.info(f"max_time: {max_time}, heuristic: {heuristic}, alpha_beta: {alpha_beta}")
-                
+        self.start_button.grid(row=10, column=0, columnspan=2, pady=20)            
                 
     def show_ai_options(self, event=None):
         mode = self.mode_var.get()
@@ -143,7 +132,7 @@ class Menu:
                        self.heuristic_label, self.heuristic_dropdown,
                        self.alpha_beta_check]:
             widget.grid_remove()
-
+            
         if "AI" in mode:
             self.max_time_label.grid(row=2, column=0, sticky="e")
             self.max_time_entry.grid(row=2, column=1, pady=5)
@@ -160,9 +149,28 @@ class Menu:
             self.max_turns_label.grid(row=3, column=0, sticky="e")
             self.max_turns_entry.grid(row=3, column=1, pady=5)
             
+    def start_game(self):
+        mode = self.mode_var.get() 
+        if mode =="Exit":
+            custom_logger.info("Game Existed")
+            self.root.quit()
+        else:
+            max_turn = self.max_turns_entry.get()
+            custom_logger.info(f"max_turn set = {max_turn}")
+            
+            if mode == "Player vs Player": # Start player vs player
+                self.root.destroy()
+                root = tk.Tk()
+                game = ChessGUI(root)
+                root.mainloop()
+            if "AI" in mode:
+                max_time = self.max_time_entry.get()
+                heuristic = self.heuristic_var.get()
+                alpha_beta = self.alpha_beta_var.get()
+                custom_logger.info(f"max_time: {max_time}, heuristic: {heuristic}, alpha_beta: {alpha_beta}")
+                
+                
 
-        
-        
 
 class ChessGUI:
     def __init__(self, root):
@@ -327,6 +335,5 @@ class ChessGUI:
 if __name__ =="__main__":
     # Run Tkinter GUI
     root = tk.Tk()
-    #game = ChessGUI(root)
     game = Menu(root)
     root.mainloop()
