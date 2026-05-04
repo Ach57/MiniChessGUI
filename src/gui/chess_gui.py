@@ -3,8 +3,8 @@ import tkinter as tk
 from tkinter import messagebox
 
 '''-------------  Pieces Configuration ----------------'''
-from Pieces import *
-from constants.GameConstants import *
+from src.pieces import *
+from src.constants.game import *
 
 class playerVsAi:
     def __init__(self, root:tk.Tk):

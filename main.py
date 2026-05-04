@@ -1,5 +1,5 @@
 import tkinter as tk
-from GUI.MenuGUI import Menu
+from src.gui.menu_gui import Menu
 
 if __name__ =="__main__":
     # Run Tkinter GUI

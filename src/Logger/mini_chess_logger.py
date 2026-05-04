@@ -1,6 +1,6 @@
 import logging
 import colorlog
-from constants.SetupConstants import *
+from src.constants.setup import *
 
 class MiniChessLogger:
     def __init__(self, alpha_beta, timeout, max_turns, player1_type, player2_type, heuristic1=None, heuristic2=None):

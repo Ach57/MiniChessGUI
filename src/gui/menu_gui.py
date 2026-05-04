@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
-from .ChessGUI import *
-from Logger.MiniChessLogger import Logger
+from .chess_gui import *
+from src.Logger.mini_chess_logger import Logger
 
 custom_logger = Logger().get_logger()
 
