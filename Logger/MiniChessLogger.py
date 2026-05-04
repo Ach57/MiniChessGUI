@@ -1,3 +1,7 @@
+import logging
+import colorlog
+from constants.SetupConstants import *
+
 class MiniChessLogger:
     def __init__(self, alpha_beta, timeout, max_turns, player1_type, player2_type, heuristic1=None, heuristic2=None):
         """
@@ -112,3 +116,40 @@ class MiniChessLogger:
             file.write(message)
             file.write("\n")
 
+class Logger:
+    def __init__(self, logger_name = DEFAULT_LOGGER_NAME, log_file = DEFAULT_LOG_FILE_NAME):
+        
+        # Create Logger
+        self.logger = logging.getLogger(logger_name)
+        self.logger.setLevel(logging.DEBUG)
+        
+        self._create_file_handler(log_file)
+        self._create_terminal_handler()
+        
+    def _create_file_handler(self, log_file:str):
+        """Creates and adds a file handler to the logger."""
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(logging.DEBUG)  # Log everything to the file
+        file_formatter = logging.Formatter(
+                '%(asctime)s - [%(levelname)s] - %(message)s',
+                 datefmt= DATE_FORMAT
+                    )
+        file_handler.setFormatter(file_formatter)
+        self.logger.addHandler(file_handler)
+        
+    def _create_terminal_handler(self):
+        """Creates and adds a terminal handler with color support to the logger."""
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)  # Ensure this is set to DEBUG
+
+        colored_formatter = colorlog.ColoredFormatter(
+            "%(log_color)s[%(asctime)s] - [%(levelname)s] - %(message)s",
+            datefmt=DATE_FORMAT,
+            log_colors=LOG_COLORS
+        )
+        stream_handler.setFormatter(colored_formatter)
+        self.logger.addHandler(stream_handler)
+
+    def get_logger(self):
+        """Returns the logger instance."""
+        return self.logger

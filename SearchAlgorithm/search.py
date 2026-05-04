@@ -1,6 +1,6 @@
 import copy
 import time
-from heuristics.heuristics import get_pieces_count
+from heuristics.Heuristics import get_pieces_count
 from  collections import defaultdict
 
 class SearchAlgorithm:
