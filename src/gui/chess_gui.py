@@ -4,7 +4,7 @@ from tkinter import messagebox
 
 '''-------------  Pieces Configuration ----------------'''
 from src.pieces import *
-from src.constants.game import *
+from src.constants.game import GameConstants as GC
 
 class playerVsAi:
     def __init__(self, root:tk.Tk):
@@ -22,18 +22,18 @@ class playerVsAi:
     def create_board(self):
         for i in range(5):
             for j in range(5):
-                piece = state['board'][i][j]
-                btn = tk.Button(self.root, text=PIECES[piece], font = ("Arial", 36), highlightbackground="white", 
+                piece = GC.state['board'][i][j]
+                btn = tk.Button(self.root, text=GC.PIECES[piece], font = ("Arial", 36), highlightbackground="white", 
                                 width=4, height=2)
                 btn.grid(row = i+1, column= j)
                 self.buttons[i][j] = btn
             
             
-        self.turnLabel.config(text = f"{state['turn'].upper()} TURN")
+        self.turnLabel.config(text = f"{GC.state['turn'].upper()} TURN")
         self.turnLabel.grid(row = 6, columnspan=5)
     
     def on_click(self, x, y):
-        piece = state['board'][x][y]# get the piece of the board
+        piece = GC.state['board'][x][y]# get the piece of the board
         return
         
         
@@ -63,22 +63,22 @@ class ChessGUI:
     def create_board(self):
         for i in range(5):
             for j in range(5):
-                piece = state["board"][i][j]
-                btn = tk.Button(self.root, text=PIECES[piece], font=("Arial", 36), highlightbackground='white',
+                piece = GC.state["board"][i][j]
+                btn = tk.Button(self.root, text=GC.PIECES[piece], font=("Arial", 36), highlightbackground='white',
                                 width=4, height=2, command=lambda x=i, y=j: self.on_click(x, y))
                 btn.grid(row=i+1, column=j)
                 self.buttons[i][j] = btn
-        self.turnLabel.config(text = f"{state['turn'].upper()} TURN")
+        self.turnLabel.config(text = f"{GC.state['turn'].upper()} TURN")
         self.turnLabel.grid(row = 6, columnspan=5)
         
 
     def on_click(self, x, y):
         """Handles piece selection and movement."""
-        piece = state["board"][x][y]
+        piece = GC.state["board"][x][y]
         
         if self.selected_piece is None:
             # Select piece if it belongs to the current player
-            if piece.startswith(state["turn"][0]): 
+            if piece.startswith(GC.state["turn"][0]): 
                 self.selected_piece = (x, y)
                 self.buttons[x][y].config(highlightbackground = "gray")
             else:
@@ -91,12 +91,12 @@ class ChessGUI:
                 self.buttons[x][y].config(highlightbackground = "white")
                 self.selected_piece = None
                 return
-            is_move_valid = self.is_valid_move(game_state=state,move=((old_x, old_y), (x,y)) )
+            is_move_valid = self.is_valid_move(game_state=GC.state,move=((old_x, old_y), (x,y)) )
             if(is_move_valid):    
-                piece = state["board"][old_x][old_y]
-                captured_piece = state['board'][x][y]
-                state["board"][x][y] = state["board"][old_x][old_y]
-                state["board"][old_x][old_y] = "."
+                piece = GC.state["board"][old_x][old_y]
+                captured_piece = GC.state['board'][x][y]
+                GC.state["board"][x][y] = GC.state["board"][old_x][old_y]
+                GC.state["board"][old_x][old_y] = "."
                 
                 if captured_piece == 'wK':
                     self.update_board(message=  "Black wins! White's King is captured.")
@@ -110,13 +110,13 @@ class ChessGUI:
                     return
                     
                 if piece in ['wp','bp']: # check for promoting piece
-                    promote_pawn((x,y), game_state = state)
+                    promote_pawn((x,y), game_state = GC.state)
             
                 # Reset board colors and update UI
                 self.selected_piece = None
                 # Change turn
-                state["turn"] = "white" if state["turn"] == "black" else "black"
-                self.update_board(f"{state['turn'].upper()} TURN")
+                GC.state["turn"] = "white" if GC.state["turn"] == "black" else "black"
+                self.update_board(f"{GC.state['turn'].upper()} TURN")
             else:
                 messagebox.showwarning('Warning', 'Illegal Move!')
 
@@ -124,8 +124,8 @@ class ChessGUI:
         """Refreshes the board UI."""
         for i in range(5):
             for j in range(5):
-                piece = state["board"][i][j]
-                self.buttons[i][j].config(text=PIECES[piece], highlightbackground="white")
+                piece = GC.state["board"][i][j]
+                self.buttons[i][j].config(text=GC.PIECES[piece], highlightbackground="white")
         self.turnLabel.config(text =message)
     
     def disable_buttons(self): #end of game

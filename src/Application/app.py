@@ -7,5 +7,5 @@ def run() -> None:
     """
     # Run Tkinter GUI
     root = tk.Tk()
-    game = Menu(root)
+    _ = Menu(root)
     root.mainloop()
