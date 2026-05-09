@@ -1,209 +1,187 @@
+from __future__ import annotations
+
 '''-------------  GUI Libraries ----------------'''
 import tkinter as tk
 from tkinter import messagebox
 
 '''-------------  Pieces Configuration ----------------'''
-from src.pieces import *
 from src.constants.game import GameConstants as GC
+from src.constants.gui import GUIConstants as GUIC
+from src.engine.game_engine import GameEngine
 
-class playerVsAi:
-    def __init__(self, root:tk.Tk):
-        self.root = root
-        self.root.title("Mini Chess Game")
-        
-        self.headerLabel = tk.Label(master=self.root, text='Welcome to Mini Chess Game', font = ('Arial', 36))
-        self.headerLabel.grid(row = 0, columnspan=5)
-        
-        self.buttons = [[None for _ in range(5)] for _ in range(5)]
-        self.selected_piece = None
-        self.turnLabel = tk.Label(master=self.root, text = "", font = ('Arial', 24))
-        self.create_board()
-    
-    def create_board(self):
-        for i in range(5):
-            for j in range(5):
-                piece = GC.state['board'][i][j]
-                btn = tk.Button(self.root, text=GC.PIECES[piece], font = ("Arial", 36), highlightbackground="white", 
-                                width=4, height=2)
-                btn.grid(row = i+1, column= j)
-                self.buttons[i][j] = btn
-            
-            
-        self.turnLabel.config(text = f"{GC.state['turn'].upper()} TURN")
-        self.turnLabel.grid(row = 6, columnspan=5)
-    
-    def on_click(self, x, y):
-        piece = GC.state['board'][x][y]# get the piece of the board
-        return
-        
-        
+# ─────────────────────────────────────────────
+#  Base class — shared structure & logic
+# ─────────────────────────────────────────────
+class BaseChessGUI:
+    """
+    Shared foundation for all Chess GUI modes.
 
-class ChessGUI:
-    def __init__(self, root: tk.Tk, player1: str, player2: str, heuristic: str = None, alpha_beta:bool = None):
-        ''' Game Information '''
-        self.player1= player1
-        self.player2 = player2
-        self.heuristic = heuristic
-        self.alpha_beta = alpha_beta
-        
-        
-        ''' GUI '''
+    Subclasses MUST implement:
+        _make_button_command(i, j) -> callable | None
+    
+    Subclasses MUST set self.engine before calling super().__init__().
+
+    """
+    
+    def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("Mini Chess Game")
-        
-        self.headerLabel = tk.Label(master=self.root, text='Welcome to Mini Chess Game', font = ('Arial', 36))
-        self.headerLabel.grid(row = 0, columnspan=5)
-        
-        self.buttons = [[None for _ in range(5)] for _ in range(5)]
-        self.selected_piece = None
-        self.turnLabel = tk.Label(master=self.root, text = "", font = ('Arial', 24))
+        self.root.title(GUIC.TITLE)
+        self.selected_piece: tuple | None = None
+        self.buttons = [
+            [None for _ in range(GUIC.BOARD_SIZE)]
+            for _ in range(GUIC.BOARD_SIZE)
+        ]
+        self._build_header()
+        self.turnLabel = tk.Label(self.root, text="", font=GUIC.FONT_TURN)
         self.create_board()
         
+    # ------------------------------------------------------------------ #
+    #  UI builders                                                         #
+    # ------------------------------------------------------------------ #
     
-    def create_board(self):
-        for i in range(5):
-            for j in range(5):
-                piece = GC.state["board"][i][j]
-                btn = tk.Button(self.root, text=GC.PIECES[piece], font=("Arial", 36), highlightbackground='white',
-                                width=4, height=2, command=lambda x=i, y=j: self.on_click(x, y))
-                btn.grid(row=i+1, column=j)
-                self.buttons[i][j] = btn
-        self.turnLabel.config(text = f"{GC.state['turn'].upper()} TURN")
-        self.turnLabel.grid(row = 6, columnspan=5)
-        
+    def _build_header(self) -> None:
+        tk.Label(
+            master=self.root, text=GUIC.HEADER_TEXT, font= GUIC.FONT_HEADER
+        ).grid(row=0, columnspan=GUIC.BOARD_SIZE)
 
-    def on_click(self, x, y):
-        """Handles piece selection and movement."""
-        piece = GC.state["board"][x][y]
-        
+    def create_board(self) -> None:
+        """Build the button grid. Delegates button command to subclass."""
+        for i in range(GUIC.BOARD_SIZE):
+            for j in range(GUIC.BOARD_SIZE):
+                piece = self.engine.state["board"][i][j]
+                cmd = self._make_button_command(i, j)   # hook for subclasses
+                btn = tk.Button(
+                    self.root,
+                    text=GC.PIECES[piece],
+                    font=GUIC.FONT_HEADER,
+                    highlightbackground=GUIC.BTN_DEFAULT_BG,
+                    width=GUIC.BTN_WIDTH,
+                    height=GUIC.BTN_HEIGHT,
+                    command=cmd,
+                )
+                btn.grid(row=i + 1, column=j)
+                self.buttons[i][j] = btn
+
+        self.turnLabel.config(text=f"{self.engine.state['turn'].upper()} TURN")
+        self.turnLabel.grid(row=GUIC.BOARD_SIZE + 1, columnspan=GUIC.BOARD_SIZE)
+    
+    def update_board(self, message: str) -> None:
+        """Refresh every button's text and reset highlight colours."""
+        for i in range(GUIC.BOARD_SIZE):
+            for j in range(GUIC.BOARD_SIZE):
+                piece = self.engine.state["board"][i][j]
+                self.buttons[i][j].config(
+                    text=GC.PIECES[piece],
+                    highlightbackground=GUIC.BTN_DEFAULT_BG,
+                )
+        self.turnLabel.config(text=message)
+
+    def disable_buttons(self) -> None:
+        """Lock the board at end-of-game."""
+        for row in self.buttons:
+            for btn in row:
+                btn.config(state=tk.DISABLED)
+
+    # ------------------------------------------------------------------ #
+    #  Abstract hook — subclasses MUST override                            #
+    # ------------------------------------------------------------------ #
+    def _make_button_command(self, i: int, j: int):
+        """
+        Return the callable to bind to button (i, j), or None for no command.
+        Subclasses override this to inject click behaviour without
+        duplicating create_board().
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement _make_button_command()"
+        )
+
+# ─────────────────────────────────────────────
+#  Player vs Player
+# ─────────────────────────────────────────────
+
+class PlayerVsPlayerGui(BaseChessGUI):
+    """Human vs Human mode."""
+
+    def __init__(
+        self,
+        root: tk.Tk,
+        player1: str,
+        player2: str        
+    ):
+        self.player1    = player1
+        self.player2    = player2
+        self.engine = GameEngine()    
+        super().__init__(root)   # triggers create_board via base __init__
+
+    # ------------------------------------------------------------------ #
+
+    def _make_button_command(self, i: int, j: int):
+        return lambda x=i, y=j: self.on_click(x, y)
+
+    def on_click(self, x: int, y: int) -> None:
+        """Handle piece selection and movement."""
+        piece = self.engine.state["board"][x][y]
+
         if self.selected_piece is None:
-            # Select piece if it belongs to the current player
-            if piece.startswith(GC.state["turn"][0]): 
-                self.selected_piece = (x, y)
-                self.buttons[x][y].config(highlightbackground = "gray")
-            else:
-                if piece !=".":
-                    messagebox.showerror('Error', 'You can\'t move your opponenet\'s piece') 
+            self._try_select(x, y, piece)
         else:
-            # Move piece
-            old_x, old_y = self.selected_piece
-            if old_x == x and old_y == y:
-                self.buttons[x][y].config(highlightbackground = "white")
-                self.selected_piece = None
-                return
-            is_move_valid = self.is_valid_move(game_state=GC.state,move=((old_x, old_y), (x,y)) )
-            if(is_move_valid):    
-                piece = GC.state["board"][old_x][old_y]
-                captured_piece = GC.state['board'][x][y]
-                GC.state["board"][x][y] = GC.state["board"][old_x][old_y]
-                GC.state["board"][old_x][old_y] = "."
-                
-                if captured_piece == 'wK':
-                    self.update_board(message=  "Black wins! White's King is captured.")
-                    self.disable_buttons()
-                    return
-                    
-                elif captured_piece =="bK":
-                    
-                    self.update_board(message="White Wins! Black\'s King is captured.")
-                    self.disable_buttons()
-                    return
-                    
-                if piece in ['wp','bp']: # check for promoting piece
-                    promote_pawn((x,y), game_state = GC.state)
-            
-                # Reset board colors and update UI
-                self.selected_piece = None
-                # Change turn
-                GC.state["turn"] = "white" if GC.state["turn"] == "black" else "black"
-                self.update_board(f"{GC.state['turn'].upper()} TURN")
-            else:
-                messagebox.showwarning('Warning', 'Illegal Move!')
+            self._try_move(x, y)
 
-    def update_board(self, message:str):
-        """Refreshes the board UI."""
-        for i in range(5):
-            for j in range(5):
-                piece = GC.state["board"][i][j]
-                self.buttons[i][j].config(text=GC.PIECES[piece], highlightbackground="white")
-        self.turnLabel.config(text =message)
+    # ------------------------------------------------------------------ #
+    #  Private click helpers                                               #
+    # ------------------------------------------------------------------ #
+
+    def _try_select(self, x: int, y: int, piece: str) -> None:
+        """Select a piece if it belongs to the current player."""
+        if piece.startswith(self.engine.state["turn"][0]):
+            self.selected_piece = (x, y)
+            self.buttons[x][y].config(highlightbackground=GUIC.BTN_SELECTED_BG)
+        elif piece != ".":
+            messagebox.showerror("Error", "You can't move your opponent's piece.")
     
-    def disable_buttons(self): #end of game
-        for i in range(5):
-            for j in range(5):
-                self.buttons[i][j].config(state = tk.DISABLED)
-    
+    def _try_move(self, x:int, y:int) -> None:
+        """Attempt to move the selected piece to (x, y)."""
+        old_x, old_y = self.selected_piece
         
-    """
-    Check if the move is valid    
-    
-    Args: 
-        - game_state:   dictionary | Dictionary representing the current game state
-        - move          tuple | the move which we check the validity of ((start_row, start_col),(end_row, end_col))
-    Returns:
-        - boolean representing the validity of the move
-    """
-    def is_valid_move(self, game_state, move):
-        current_pos, destination = move
-        board = game_state['board']
-        turn = game_state['turn']
-        try: # for when the player enters a move completely out of the board
-            player = board[current_pos[0]][current_pos[1]]
-        except IndexError:
-            return False
+        # Clicking the same square deselects the piece
+        if (x,y) == (old_x, old_y):
+            self.buttons[x][y].config(highlightbackground=GUIC.BTN_DEFAULT_BG)
+            self.selected_piece = None
+            return
 
-        if player =='.':
-            return False
-        
-        if (player[0] =='w' and turn!= 'white') or (player[0]=='b' and turn!='black'):
-            return False
-        
-        valid_movements = self.valid_moves(game_state)
-        
-        if (current_pos, destination) in valid_movements:
-            return True
-        
-        return False
-    
-    """
-    Returns a list of valid moves
+        move = ((old_x, old_y), (x, y))
 
-    Args:
-        - game_state:   dictionary | Dictionary representing the current game state
-    Returns:
-        - valid moves:   list | A list of nested tuples corresponding to valid moves [((start_row, start_col),(end_row, end_col)),((start_row, start_col),(end_row, end_col))]
-    """
-    def valid_moves(self, game_state):
-        board = game_state['board']
-        turn = game_state['turn']
-        valid_moves = []
-        
-        movement_rules = {
-            "K": king_moves,
-            "Q": queen_moves,
-            "B": bishop_moves,
-            "N": knight_moves,
-            "p": pawn_moves
-        }
-        for row in range(5):
-            for col in range(5):
-                piece = board[row][col]
-                if piece == ".": continue
-                
-                piece_color = "white" if piece[0] =="w" else "black"
-                piece_type = piece[1]
-                
-                if piece_color == turn:
-                    move_function = movement_rules.get(piece_type, lambda position, game_state: [])
-                    possible_moves = move_function((row, col), game_state)
-                    
-                    for move in possible_moves:
-                        end_row, end_col = move
-                        if 0 <= end_row < 5 and 0 <= end_col < 5:
-                            valid_moves.append(((row, col), (end_row, end_col)))
-                
-        return valid_moves
+        if not self.engine.is_valid_move(move):      # ask the engine
+            messagebox.showwarning("Warning", "Illegal move!")
+            return
+
+        self.engine.apply_move(move)                 # engine mutates state
+        self.selected_piece = None
+
+        winner = self.engine.is_game_over()          # engine checks win
+        if winner:
+            self.update_board(winner)
+            self.disable_buttons()
+        else:
+            self.update_board(f"{self.engine.state['turn'].upper()} TURN")    
 
 
+# ─────────────────────────────────────────────
+#  Player vs AI
+# ─────────────────────────────────────────────
 
-    
+class PlayerVsAi(BaseChessGUI):
+    """Human vs AI mode — AI logic to be wired in."""
+
+    def __init__(self, root: tk.Tk):
+        self.engine = GameEngine()
+        super().__init__(root)
+
+    def _make_button_command(self, i: int, j: int):
+        # TODO: wire up AI response after human click
+        return lambda x=i, y=j: self.on_click(x, y)
+
+    def on_click(self, x: int, y: int) -> None:
+        # TODO: implement human half-turn, then trigger AI move
+        _piece = self.engine.state["board"][x][y]
+
