@@ -20,13 +20,17 @@ class GameEngine:
     Completely independent of any GUI framework.
     """
 
-    def __init__(self):
+    def __init__(self, max_turns: int = 100):
+        self.max_turns = max_turns
         self.state = self._fresh_state()
 
     def _fresh_state(self) -> dict:
         """Return a clean starting game state (deep-copied from constants)."""
         import copy
-        return copy.deepcopy(GC.state)   # never mutate the constant directly
+        state = copy.deepcopy(GC.state)   # never mutate the constant directly 
+        state['turn_count'] = 0
+        return state
+        
 
     # ------------------------------------------------------------------ #
     #  Queries  (read-only — never mutate self.state)                     #
@@ -87,7 +91,8 @@ class GameEngine:
             return "Black wins! White's King is captured."
         if "bK" not in pieces_on_board:
             return "White wins! Black's King is captured."
-
+        if self.state['turn_count'] >= self.max_turns:
+            return f"Draw — maximum turns ({self.max_turns}) reached."
         return None
 
     # ------------------------------------------------------------------ #
@@ -108,6 +113,7 @@ class GameEngine:
         if piece in ("wp", "bp"):
             self._promote_pawn((x, y))
 
+        self.state['turn_count'] +=1
         self.state["turn"] = "white" if self.state["turn"] == "black" else "black"
 
     def _promote_pawn(self, position: tuple) -> None:

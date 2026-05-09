@@ -4,7 +4,12 @@ from heuristics.heuristics import get_pieces_count
 from  collections import defaultdict
 
 class SearchAlgorithm:
-    def __init__(self, game, heuristic, alpha_beta:bool=True, max_time:int=5, maximizier:bool=True) ->None:
+    def __init__(self,
+                game,
+                heuristic,
+                alpha_beta:bool=True,
+                max_time:int=5,
+                maximizier:bool=True) ->None:
         """
         Initializes the search algorithm.
         

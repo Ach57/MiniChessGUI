@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from .chess_gui import PlayerVsPlayerGui, PlayerVsAi
+from .chess_gui import PlayerVsPlayerGui, PlayerVsAiGui
 from src.Logger.mini_chess_logger import Logger
 from src.constants.menu import MenuConstants as MC
 
@@ -136,18 +136,18 @@ class Menu:
             self.root.quit()
             return
 
-        max_turns = self.max_turns_entry.get()
+        max_turns = int(self.max_turns_entry.get())
         logger.info("max_turns set = %s", max_turns)
 
         if mode == "Player vs Player":
-            self._launch_pvp()
+            self._launch_pvp(max_turns=max_turns)
         elif "AI" in mode:
             self._launch_ai_mode(mode)
 
-    def _launch_pvp(self) -> None:
+    def _launch_pvp(self,max_turns:int) -> None:
         self.root.destroy()
         root = tk.Tk()
-        PlayerVsPlayerGui(root, player1="Player", player2="Player")
+        PlayerVsPlayerGui(root, max_turns)
         root.mainloop()
 
     def _launch_ai_mode(self, mode: str) -> None:
@@ -160,7 +160,7 @@ class Menu:
         root = tk.Tk()
 
         if mode == "Player vs AI":
-            PlayerVsAi(root)
+            PlayerVsAiGui(root)
         # TODO: handle "AI vs Player" and "AI vs AI" here
 
         root.mainloop()

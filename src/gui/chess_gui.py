@@ -104,13 +104,10 @@ class PlayerVsPlayerGui(BaseChessGUI):
 
     def __init__(
         self,
-        root: tk.Tk,
-        player1: str,
-        player2: str        
-    ):
-        self.player1    = player1
-        self.player2    = player2
-        self.engine = GameEngine()    
+        root: tk.Tk,  
+        max_turns: int  
+    ):        
+        self.engine = GameEngine(max_turns)    
         super().__init__(root)   # triggers create_board via base __init__
 
     # ------------------------------------------------------------------ #
@@ -170,10 +167,10 @@ class PlayerVsPlayerGui(BaseChessGUI):
 #  Player vs AI
 # ─────────────────────────────────────────────
 
-class PlayerVsAi(BaseChessGUI):
+class PlayerVsAiGui(BaseChessGUI):
     """Human vs AI mode — AI logic to be wired in."""
 
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: tk.Tk, ):
         self.engine = GameEngine()
         super().__init__(root)
 
