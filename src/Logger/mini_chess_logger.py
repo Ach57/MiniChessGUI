@@ -1,6 +1,6 @@
 import logging
 import colorlog
-from src.constants.setup import *
+from src.constants.setup import SetupConstants as SC
 
 class MiniChessLogger:
     def __init__(self, alpha_beta, timeout, max_turns, player1_type, player2_type, heuristic1=None, heuristic2=None):
@@ -117,7 +117,7 @@ class MiniChessLogger:
             file.write("\n")
 
 class Logger:
-    def __init__(self, logger_name = DEFAULT_LOGGER_NAME, log_file = DEFAULT_LOG_FILE_NAME):
+    def __init__(self, logger_name = SC.DEFAULT_LOGGER_NAME, log_file = SC.DEFAULT_LOG_FILE_NAME):
         
         # Create Logger
         self.logger = logging.getLogger(logger_name)
@@ -132,7 +132,7 @@ class Logger:
         file_handler.setLevel(logging.DEBUG)  # Log everything to the file
         file_formatter = logging.Formatter(
                 '%(asctime)s - [%(levelname)s] - %(message)s',
-                 datefmt= DATE_FORMAT
+                 datefmt= SC.DATE_FORMAT
                     )
         file_handler.setFormatter(file_formatter)
         self.logger.addHandler(file_handler)
@@ -144,8 +144,8 @@ class Logger:
 
         colored_formatter = colorlog.ColoredFormatter(
             "%(log_color)s[%(asctime)s] - [%(levelname)s] - %(message)s",
-            datefmt=DATE_FORMAT,
-            log_colors=LOG_COLORS
+            datefmt=SC.DATE_FORMAT,
+            log_colors=SC.LOG_COLORS
         )
         stream_handler.setFormatter(colored_formatter)
         self.logger.addHandler(stream_handler)
