@@ -1,5 +1,5 @@
 # src/engine/game_engine.py
-
+from typing import Callable
 from src.pieces import *
 from src.constants.game import GameConstants as GC
 from src.constants.gui import GUIConstants as GUIC
@@ -20,8 +20,17 @@ class GameEngine:
     Completely independent of any GUI framework.
     """
 
-    def __init__(self, max_turns: int = 100):
+    def __init__(self,
+                 max_turns: int = 100,
+                max_time: float | None = None,
+                heuristic_fn: Callable | None = None,
+                alpha_beta: bool | None = None,):
+        
         self.max_turns = max_turns
+        self.max_time = max_time
+        self.heuristic_fn = heuristic_fn
+        self.alpha_beta = alpha_beta
+        
         self.state = self._fresh_state()
 
     def _fresh_state(self) -> dict:

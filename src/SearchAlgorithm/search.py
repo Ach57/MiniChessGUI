@@ -1,172 +1,224 @@
+from __future__ import annotations
+
 import copy
 import time
-from heuristics.heuristics import get_pieces_count
-from  collections import defaultdict
+from collections import defaultdict
+from typing import Callable
+
+from src.heuristics.heuristics import get_pieces_count
+
+
+# ─────────────────────────────────────────────
+#  Custom exception — replaces exit() calls
+# ─────────────────────────────────────────────
+
+class SearchTimeout(Exception):
+    """Raised when the search exceeds its time budget.
+    
+    Caught by search_best_move(), which returns the best
+    move found so far rather than crashing the process.
+    """
+
+
+# ─────────────────────────────────────────────
+#  Search Algorithm
+# ─────────────────────────────────────────────
 
 class SearchAlgorithm:
-    def __init__(self,
-                game,
-                heuristic,
-                alpha_beta:bool=True,
-                max_time:int=5,
-                maximizier:bool=True) ->None:
+    """
+    Minimax search with optional Alpha-Beta pruning.
+
+    Design contract
+    ---------------
+    - Receives a **snapshot** of the engine state (a plain dict).
+      It never holds a reference to the live GameEngine, the GUI,
+      or the logger — those are Controller concerns.
+    - On timeout it raises SearchTimeout internally, catches it in
+      search_best_move(), and returns the best move found so far.
+      It never calls exit().
+    - Deep copies only the state dict (not a whole game object) when
+      branching the search tree.
+    - Minimax and Alpha-Beta share one recursive method (_minimax);
+      pruning is toggled by self.alpha_beta.
+    """
+
+    def __init__(
+        self,
+        initial_state: dict,
+        heuristic: Callable,
+        valid_moves_fn: Callable,
+        apply_move_fn: Callable,
+        is_game_over_fn: Callable,
+        alpha_beta: bool = True,
+        max_time: float = 5.0,
+        maximizer: bool = True,
+    ) -> None:
         """
-        Initializes the search algorithm.
-        
         Args:
-            game: The MiniChess game instance.
-            heuristic: The heuristic function to evaluate board states.
-            alpha_beta (bool): Whether to use Alpha-Beta Pruning (True) or Minimax (False).
-            max_time (int): Maximum time allowed for the AI to make a move.
+            initial_state:    Deep-copied state dict from the engine.
+            heuristic:        Callable(pieces_count, game_state) -> int.
+            valid_moves_fn:   Callable(game_state) -> list[tuple].
+            apply_move_fn:    Callable(game_state, move) -> new_game_state dict.
+            is_game_over_fn:  Callable(game_state) -> str | None.
+            alpha_beta:       True → Alpha-Beta pruning; False → plain Minimax.
+            max_time:         Time budget in seconds.
+            maximizer:        True if the AI plays as the maximizing side (white).
         """
-        self.game = game  # Reference to the MiniChess game
-        self.heuristic = heuristic  # Chosen heuristic function
-        self.alpha_beta = alpha_beta  # Boolean: True for Alpha-Beta, False for Minimax
-        self.max_time = max_time  # Time limit for AI move computation
-        self.start_time = None  # Track the start time for time management
-        self.maximizer = maximizier
-        self.cumulative_count = 0
-        self.state_by_depth = defaultdict(int)
-    
-    def search_best_move(self, depth):
+        self.initial_state   = initial_state
+        self.heuristic       = heuristic
+        self.valid_moves_fn  = valid_moves_fn
+        self.apply_move_fn   = apply_move_fn
+        self.is_game_over_fn = is_game_over_fn
+        self.alpha_beta      = alpha_beta
+        self.max_time        = max_time
+        self.maximizer       = maximizer
+
+        # Diagnostics — reset each call to search_best_move()
+        self.cumulative_states: int = 0
+        self.states_by_depth: defaultdict[int, int] = defaultdict(int)
+        self.start_time: float = 0.0
+
+    # ------------------------------------------------------------------ #
+    #  Public entry point                                                  #
+    # ------------------------------------------------------------------ #
+
+    def search_best_move(self, depth: int) -> tuple[int, tuple | None, float]:
         """
-        Decides whether to use Minimax or Alpha-Beta based on the `self.alpha_beta` flag.
-        
-        Args:
-            depth (int): Maximum depth to search in the game tree.
+        Run the search and return the best move found within the time budget.
 
         Returns:
-            tuple: (best_score, best_move)
+            (best_score, best_move, time_spent)
+            best_move is None only if no moves are available (game already over).
         """
+        # Reset diagnostics for this search call
+        self.cumulative_states = 0
+        self.states_by_depth.clear()
         self.start_time = time.time()
-        if self.alpha_beta: # If alpha beta activated
-            move = self.alpha_beta_pruning(self.game,depth, float('-inf'), float('inf'), self.maximizer)
-            end_time = time.time()
-            time_spent = end_time -self.start_time
-            return (move[0], move[1], time_spent) # heuristic score of the search, move, time_spent on the search
-        else: 
-            #return self.minimax(game_state=copy_state,depth = depth, maximizing_player=True) # Call for minimax with maximizing at the turn of the Ai
-            move = self.minimax(self.game, depth, self.maximizer)
-            end_time = time.time()
-            time_spent = end_time - self.start_time #Get time spent on the search
-            return (move[0], move[1], time_spent) # heuristic score of the search, move, time spent on the search
-        
 
-    def minimax(self, game_state , depth: int, maximizing_player: bool):
-        if time.time() - self.start_time >= self.max_time:
-            print("AI exceeded time limit! It loses.")
-            self.game.logger.log_winner(f"{'White' if maximizing_player else 'Black'} loses due to timeout.")
-            exit(1)
-        
-        if depth == 0 or self.game.is_game_over(): # check if we're at depth 0 or if the game is over or not
-            self.cumulative_count+=1
-            
-            return self.evaluation_score(game_state), None # returns the heuristic score, best_move = none
+        best_score, best_move = 0, None
 
-        best_move = None
-        valid_moves = game_state.valid_moves(game_state.current_game_state) # Get all valid moves of the current state
-        
-        if maximizing_player:
-            max_eval = float("-inf")
-            for move in valid_moves:
-                new_state = copy.deepcopy(game_state)
-                new_state.ai_make_move(new_state.current_game_state, move)
-                self.state_by_depth[depth]+=1
-                eval_score, _ = self.minimax(new_state, depth-1, False)
-                
-                if eval_score>max_eval:
-                    max_eval = eval_score
-                    best_move = move 
-            
-            return max_eval, best_move
-        else:
-            min_eval = float("+inf")
-            for move in valid_moves:
-                new_state = copy.deepcopy(game_state)
-                new_state.ai_make_move(new_state.current_game_state, move)
-                self.state_by_depth[depth]+=1
-                eval_score, _ = self.minimax(new_state,depth-1, True)
-                if eval_score< min_eval:
-                    
-                    min_eval = eval_score
-                    best_move = move
-                
-            return min_eval, best_move 
-        
-    """
-    Implements Alpha-Beta Pruning to optimize Minimax.
-    
-    Args:
-        depth (int): How deep the search tree should go.
-        alpha (float): Best already explored option along the path for the maximizer.
-        beta (float): Best already explored option along the path for the minimizer.
-        maximizing_player (bool): True if maximizing (White), False if minimizing (Black).
+        try:
+            best_score, best_move = self._minimax(
+                state=self.initial_state,
+                depth=depth,
+                alpha=float("-inf"),
+                beta=float("+inf"),
+                maximizing=self.maximizer,
+            )
+        except SearchTimeout:
+            # Return the best move found before the clock ran out.
+            # The controller decides how to handle a timeout (log, warn, etc.)
+            pass
 
-    Returns:
-        tuple: (best_score, best_move)
-    """
-    def alpha_beta_pruning(self,game_state, depth, alpha, beta, maximizing_player):
-        # Check if time is up before continuing the search
-        if time.time() - self.start_time >= self.max_time:
-            print("AI exceeded time limit! It loses.")
-            self.game.logger.log_winner(f"{'White' if maximizing_player else 'Black'} loses due to timeout.")
-            exit(0)  # AI automatically loses if it takes too long
+        time_spent = time.time() - self.start_time
+        return best_score, best_move, time_spent
 
-        # Base case: If depth = 0 or game is over, evaluate the board.
-        if depth == 0 or self.game.is_game_over():
-            self.cumulative_count +=1
-            return self.evaluation_score(game_state), None
+    # ------------------------------------------------------------------ #
+    #  Core recursive search (Minimax + optional Alpha-Beta)              #
+    # ------------------------------------------------------------------ #
 
-        best_move = None
-        valid_moves = game_state.valid_moves(game_state.current_game_state)
-
-        if maximizing_player:  # White (Maximizing)
-            max_eval = float('-inf')
-            for move in valid_moves:
-                new_state = copy.deepcopy(game_state)
-                new_state.ai_make_move(new_state.current_game_state, move)
-                self.state_by_depth[depth]+=1
-                eval_score, _ = self.alpha_beta_pruning(new_state,depth - 1, alpha, beta, False)
-
-                if eval_score > max_eval:
-                    max_eval = eval_score
-                    best_move = move
-
-                # Alpha-Beta Pruning Condition
-                alpha = max(alpha, eval_score)
-                if beta <= alpha:
-                    break  # Prune the remaining branches
-
-            return max_eval, best_move
-
-        else:  # Black (Minimizing)
-            min_eval = float('inf')
-            for move in valid_moves:
-                new_state = copy.deepcopy(game_state)
-                new_state.ai_make_move(new_state.current_game_state, move)
-                self.state_by_depth[depth]+=1
-                eval_score, _ = self.alpha_beta_pruning(new_state,depth - 1, alpha, beta, True)
-
-                if eval_score < min_eval:
-                    min_eval = eval_score
-                    best_move = move
-
-                # Alpha-Beta Pruning Condition
-                beta = min(beta, eval_score)
-                if beta <= alpha:
-                    break  # Prune the remaining branches
-
-            return min_eval, best_move
-            
-    def evaluation_score(self, current_state):
+    def _minimax(
+        self,
+        state: dict,
+        depth: int,
+        alpha: float,
+        beta: float,
+        maximizing: bool,
+    ) -> tuple[int, tuple | None]:
         """
-        Evaluates the game state using the chosen heuristic.
-        
+        Single recursive method for both Minimax and Alpha-Beta.
+        Pruning only activates when self.alpha_beta is True.
+
+        Args:
+            state:      Current board state dict (already a copy).
+            depth:      Remaining search depth.
+            alpha:      Best score the maximizer can guarantee so far.
+            beta:       Best score the minimizer can guarantee so far.
+            maximizing: True → maximizing player's turn.
+
         Returns:
-            int: Heuristic score representing the favorability of the state.
+            (best_score, best_move)
         """
-        heuristic_func = self.heuristic
-        current_game_state = current_state.current_game_state
-        return heuristic_func(get_pieces_count(current_game_state), current_game_state)
-        
-        
+        self._check_timeout()
+
+        # Base case: leaf node or terminal state
+        if depth == 0 or self.is_game_over_fn() is not None:
+            self.cumulative_states += 1
+            return self._evaluate(state), None
+
+        moves = self.valid_moves_fn()
+        if not moves:
+            # No moves available — evaluate as terminal
+            self.cumulative_states += 1
+            return self._evaluate(state), None
+
+        best_move = None
+
+        if maximizing:
+            best_score = float("-inf")
+            for move in moves:
+                child_state = self._branch(state, move, depth)
+                score, _ = self._minimax(child_state, depth - 1, alpha, beta, False)
+
+                if score > best_score:
+                    best_score = score
+                    best_move  = move
+
+                alpha = max(alpha, score)
+                if self.alpha_beta and beta <= alpha:
+                    break  # β-cutoff
+
+            return best_score, best_move
+
+        else:  # minimizing
+            best_score = float("+inf")
+            for move in moves:
+                child_state = self._branch(state, move, depth)
+                score, _ = self._minimax(child_state, depth - 1, alpha, beta, True)
+
+                if score < best_score:
+                    best_score = score
+                    best_move  = move
+
+                beta = min(beta, score)
+                if self.alpha_beta and beta <= alpha:
+                    break  # α-cutoff
+
+            return best_score, best_move
+
+    # ------------------------------------------------------------------ #
+    #  Private helpers                                                     #
+    # ------------------------------------------------------------------ #
+
+    def _check_timeout(self) -> None:
+        """Raise SearchTimeout if the time budget is exhausted."""
+        if time.time() - self.start_time >= self.max_time:
+            raise SearchTimeout()
+
+    def _branch(self, state: dict, move: tuple, depth: int) -> dict:
+        """
+        Copy only the state dict and apply the move to the copy.
+        Counts the new node for diagnostics.
+        """
+        new_state = copy.deepcopy(state)       # dict only — not a whole game object
+        self.apply_move_fn(move)
+        self.states_by_depth[depth] += 1
+        return new_state
+
+    def _evaluate(self, state: dict) -> int:
+        """Score a leaf node using the chosen heuristic."""
+        pieces_count = get_pieces_count(state)
+        return self.heuristic(pieces_count, state)
+
+    # ------------------------------------------------------------------ #
+    #  Diagnostics                                                         #
+    # ------------------------------------------------------------------ #
+
+    def get_stats(self) -> dict:
+        """Return search diagnostics after the last search_best_move() call."""
+        return {
+            "cumulative_states": self.cumulative_states,
+            "states_by_depth":   dict(self.states_by_depth),
+            "alpha_beta":        self.alpha_beta,
+            "max_time":          self.max_time,
+        }

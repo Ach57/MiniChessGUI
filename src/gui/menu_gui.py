@@ -4,6 +4,9 @@ from tkinter import ttk
 from .chess_gui import PlayerVsPlayerGui, PlayerVsAiGui
 from src.Logger.mini_chess_logger import Logger
 from src.constants.menu import MenuConstants as MC
+from src.controller.game_controller import GameController
+from src.engine.game_engine import GameEngine
+from src.heuristics.heuristics import e0, e1,e2
 
 logger = Logger().get_logger()
 
@@ -142,7 +145,7 @@ class Menu:
         if mode == "Player vs Player":
             self._launch_pvp(max_turns=max_turns)
         elif "AI" in mode:
-            self._launch_ai_mode(mode)
+            self._launch_ai_mode(mode, max_turns=max_turns)
 
     def _launch_pvp(self,max_turns:int) -> None:
         self.root.destroy()
@@ -150,7 +153,7 @@ class Menu:
         PlayerVsPlayerGui(root, max_turns)
         root.mainloop()
 
-    def _launch_ai_mode(self, mode: str) -> None:
+    def _launch_ai_mode(self, mode: str, max_turns: int) -> None:
         max_time  = self.max_time_entry.get()
         heuristic = self.heuristic_var.get()
         alpha_beta = self.alpha_beta_var.get()
@@ -158,9 +161,15 @@ class Menu:
 
         self.root.destroy()
         root = tk.Tk()
+        
+        engine = GameEngine(max_turns=max_turns,
+                          max_time=float(max_time),
+                          heuristic_fn=e0,
+                          alpha_beta=alpha_beta)
 
         if mode == "Player vs AI":
-            PlayerVsAiGui(root)
+            view = PlayerVsAiGui(root,engine=engine)
+            controller = GameController(engine= engine, view = view)            
         # TODO: handle "AI vs Player" and "AI vs AI" here
 
         root.mainloop()
