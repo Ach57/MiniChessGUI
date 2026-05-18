@@ -7,17 +7,37 @@ import copy
 
 if TYPE_CHECKING:
     from src.engine.game_engine import GameEngine
-    from src.gui.chess_gui import PlayerVsAiGui
+    from src.gui.chess_gui import BaseChessGUI
 
 logger = Logger().get_logger()
 
 class GameController:
-    def __init__(self, engine: GameEngine, view: PlayerVsAiGui):
+    """
+    Base controller — shared logic for all game modes.
+
+    Subclasses MUST implement:
+        start() — wire callbacks and kick off the game loop
+    """
+    def __init__(self, engine: GameEngine, view: BaseChessGUI):
         self.engine = engine
         self.view = view
         
         # Wire the view's callback slot to the controller's handler
         self.view.on_ai_turn_requested = self._handle_ai_turn
+    
+    # ------------------------------------------------------------------ #
+    #  Abstract hook                                                       #
+    # ------------------------------------------------------------------ #
+    
+    def start(self) -> None:
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement start()"
+        )
+    
+    # ------------------------------------------------------------------ #
+    #  Shared logic — used by all subclasses                              #
+    # ------------------------------------------------------------------ #
+    
     
     def _handle_ai_turn(self):
         """Run the search, apply the best move, refresh the view."""

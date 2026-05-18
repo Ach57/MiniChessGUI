@@ -36,6 +36,13 @@ class BaseChessGUI:
         self.create_board()
         
     # ------------------------------------------------------------------ #
+    #  UI runner                                                         #
+    # ------------------------------------------------------------------ #    
+    
+    def runChessGame(self) -> None:
+        self.root.mainloop()
+        
+    # ------------------------------------------------------------------ #
     #  UI builders                                                         #
     # ------------------------------------------------------------------ #
     
@@ -108,8 +115,7 @@ class PlayerVsPlayerGui(BaseChessGUI):
         max_turns: int  
     ):        
         self.engine = GameEngine(max_turns)    
-        super().__init__(root)   # triggers create_board via base __init__
-
+        super().__init__(root)   # triggers create_board via base __init__            
     # ------------------------------------------------------------------ #
 
     def _make_button_command(self, i: int, j: int):

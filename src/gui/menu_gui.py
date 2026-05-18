@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import tkinter as tk
 from tkinter import ttk
 
@@ -15,19 +17,24 @@ class Menu:
     """Main menu window for Mini Chess Game."""
 
     def __init__(self, root: tk.Tk):
+        self._build(root=root)
+    
+    def runGame(self) -> None:
+        self.root.mainloop()
+        
+    # ------------------------------------------------------------------ #
+    #  Private builders — called once from __init__                      #
+    # ------------------------------------------------------------------ #
+    
+    def _build(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title(MC.TITLE)
-
         self._build_header()
         self._build_mode_selector()
         self._build_ai_options()   # creates widgets but hides them
         self._build_start_button()
-
-    # ------------------------------------------------------------------ #
-    #  Private builders — called once from __init__                        #
-    # ------------------------------------------------------------------ #
-
-    def _build_header(self) -> None:
+    
+    def _build_header(self) -> None:        
         tk.Label(
             self.root, text=MC.HEADER_TEXT, font=MC.FONT_HEADER
         ).grid(row=0, column=0, columnspan=2, pady=20)
@@ -148,10 +155,9 @@ class Menu:
             self._launch_ai_mode(mode, max_turns=max_turns)
 
     def _launch_pvp(self,max_turns:int) -> None:
-        self.root.destroy()
-        root = tk.Tk()
-        PlayerVsPlayerGui(root, max_turns)
-        root.mainloop()
+        self.root.destroy()        
+        pvp = PlayerVsPlayerGui(tk.Tk(), max_turns)
+        pvp.runChessGame()
 
     def _launch_ai_mode(self, mode: str, max_turns: int) -> None:
         max_time  = self.max_time_entry.get()
