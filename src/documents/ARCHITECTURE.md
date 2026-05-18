@@ -35,50 +35,59 @@ Controller level without any GUI dependency.
 
 ## 2. Pattern: Model-View-Controller (MVC)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                          MODEL                              │
-│                        GameEngine                           │
-│                                                             │
-│  Owns all game state and enforces all rules.                │
-│                                                             │
-│  State:     board (5×5 array), turn, move history           │
-│  Queries:   valid_moves()  is_valid_move()  is_game_over()  │
-│  Commands:  apply_move()   promote_pawn()                   │
-│                                                             │
-│  ✔  No imports from gui/ or controller/                     │
-│  ✔  Fully testable in isolation (no Tk, no display)         │
-└──────────────────┬──────────────────────────────────────────┘
-                   │  Controller reads state, calls commands
-                   │
-┌──────────────────▼──────────────────────────────────────────┐
-│                       CONTROLLER                            │
-│                      GameController                         │
-│                                                             │
-│  Mediates between Model and View.                           │
-│                                                             │
-│  - Receives raw input events from the View (on_click)       │
-│  - Asks the Model whether the move is legal                 │
-│  - Tells the Model to apply the move                        │
-│  - Asks the Model for the new state                         │
-│  - Tells the View to redraw with that state                 │
-│  - Triggers AI moves when it is the AI's turn               │
-│                                                             │
-│  ✔  Imports from both engine/ and gui/                      │
-│  ✔  Contains zero display code (no widget config)           │
-│  ✔  Contains zero rule code (no board array access)         │
-└────────┬─────────────────────────────────┬──────────────────┘
-         │  Controller instructs View       │  Controller calls AI
-         │                                  │
-┌────────▼──────────────┐     ┌────────────▼────────────────┐
-│         VIEW          │     │        AI PLAYER            │
-│     BaseChessGUI      │     │      SearchAlgorithm        │
-│   + subclasses        │     │                             │
-│                       │     │  Receives a GameEngine      │
-│  Renders board state  │     │  snapshot, returns the      │
-│  Fires input events   │     │  best move tuple.           │
-│  Never touches rules  │     │  No GUI dependency.         │
-└───────────────────────┘     └─────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph MODEL["MODEL — GameEngine"]
+        ME["State: board 5×5, turn, move history
+        ─────────────────────────────
+        Queries:
+          valid_moves()
+          is_valid_move()
+          is_game_over()
+        ─────────────────────────────
+        Commands:
+          apply_move()
+          promote_pawn()
+        ─────────────────────────────
+        ✔ No imports from gui/ or controller/
+        ✔ Fully testable in isolation"]
+    end
+
+    subgraph CONTROLLER["CONTROLLER — GameController"]
+        CE["Mediates between Model and View
+        ─────────────────────────────
+        - Receives input events from View
+        - Asks Model whether move is legal
+        - Tells Model to apply the move
+        - Asks Model for the new state
+        - Tells View to redraw
+        - Triggers AI moves when AI's turn
+        ─────────────────────────────
+        ✔ Imports from both engine/ and gui/
+        ✔ Zero display code
+        ✔ Zero rule code"]
+    end
+
+    subgraph VIEW["VIEW — BaseChessGUI + subclasses"]
+        VE["Renders board state
+        Fires input events
+        Never touches rules"]
+    end
+
+    subgraph AI["AI PLAYER — SearchAlgorithm"]
+        AE["Receives a GameEngine snapshot
+        Returns the best move tuple
+        No GUI dependency"]
+    end
+
+    MODEL -->|"Controller reads state,\ncalls commands"| CONTROLLER
+    CONTROLLER -->|"Controller instructs\nView to redraw"| VIEW
+    CONTROLLER -->|"Controller calls AI,\ngets best move back"| AI
+
+    style MODEL fill:#dbeafe,stroke:#2563eb,color:#1e3a5f
+    style CONTROLLER fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style VIEW fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    style AI fill:#fce7f3,stroke:#db2777,color:#831843
 ```
 
 **One-sentence rule for each layer:**
@@ -214,28 +223,51 @@ class GameController:
 
 **Data flow inside `on_click`:**
 
-```
-Human clicks (x, y)
-      │
-      ▼
-GameController.on_click(x, y)
-      │
-      ├─ No piece selected yet?
-      │       └─ _try_select(x, y)
-      │              └─ highlight button via view
-      │
-      └─ Piece already selected?
-              └─ _try_move(x, y)
-                     │
-                     ├─ engine.is_valid_move(move) → False → show warning
-                     │
-                     └─ True → engine.apply_move(move)
-                                    │
-                                    ├─ engine.is_game_over() → winner → view.show_result()
-                                    │
-                                    └─ None → view.update_board(state)
-                                                    │
-                                                    └─ AI turn? → _trigger_ai_move()
+```mermaid
+flowchart TD
+    A(["Human clicks (x, y)"])
+    B["GameController.on_click(x, y)"]
+    C{"Piece\nalready selected?"}
+
+    D["_try_select(x, y)"]
+    E["view.highlight_square(x, y)"]
+
+    F["_try_move(x, y)"]
+    G{"engine.\nis_valid_move(move)"}
+    H["view.show_warning()"]
+
+    I["engine.apply_move(move)"]
+    J{"engine.\nis_game_over()"}
+    K["view.show_result(winner)"]
+    L["view.update_board(state)"]
+    M{"AI turn?"}
+    N["_trigger_ai_move()"]
+
+    A --> B
+    B --> C
+
+    C -->|"No"| D
+    D --> E
+
+    C -->|"Yes"| F
+    F --> G
+
+    G -->|"False"| H
+    G -->|"True"| I
+
+    I --> J
+    J -->|"winner"| K
+    J -->|"None"| L
+
+    L --> M
+    M -->|"Yes"| N
+    M -->|"No"| END(["Wait for next click"])
+
+    style A fill:#dbeafe,stroke:#2563eb,color:#1e3a5f
+    style K fill:#fce7f3,stroke:#db2777,color:#831843
+    style H fill:#fce7f3,stroke:#db2777,color:#831843
+    style N fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style END fill:#dbeafe,stroke:#2563eb,color:#1e3a5f
 ```
 
 **Hard rules:**

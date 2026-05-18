@@ -1,4 +1,3 @@
-
 def get_pieces_count(game_state: dict) ->dict:
     """_summary_
     Returns the number of pieces in a dictionary 

@@ -1,30 +1,41 @@
+from __future__ import annotations
+
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 
-from .chess_gui import PlayerVsPlayerGui, PlayerVsAi
+from .chess_gui import PlayerVsPlayerGui, PlayerVsAiGui, AiVsAiGui
 from src.Logger.mini_chess_logger import Logger
 from src.constants.menu import MenuConstants as MC
+from src.controller.game_controller import PvPController, PvAIController, AiVsAiController
+from src.engine.game_engine import GameEngine
+from src.heuristics import HEURISTIC_MAP, e0
+
 
 logger = Logger().get_logger()
-
 
 class Menu:
     """Main menu window for Mini Chess Game."""
 
     def __init__(self, root: tk.Tk):
+        self._build(root=root)
+    
+    def runGame(self) -> None:
+        self.root.mainloop()
+        
+    # ------------------------------------------------------------------ #
+    #  Private builders — called once from __init__                      #
+    # ------------------------------------------------------------------ #
+    
+    def _build(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title(MC.TITLE)
-
         self._build_header()
         self._build_mode_selector()
         self._build_ai_options()   # creates widgets but hides them
         self._build_start_button()
-
-    # ------------------------------------------------------------------ #
-    #  Private builders — called once from __init__                        #
-    # ------------------------------------------------------------------ #
-
-    def _build_header(self) -> None:
+    
+    def _build_header(self) -> None:        
         tk.Label(
             self.root, text=MC.HEADER_TEXT, font=MC.FONT_HEADER
         ).grid(row=0, column=0, columnspan=2, pady=20)
@@ -94,6 +105,11 @@ class Menu:
         """Show or hide optional fields depending on the selected game mode."""
         self._hide_all_ai_widgets()
         mode = self.mode_var.get()
+        
+        # Show message to use that they can't use this section for now
+        if mode =="AI vs Player" or mode =="AI vs AI":
+            messagebox.showinfo("Info", "To be determined in future releases...")
+            return
 
         if "AI" in mode:
             self._show_ai_widgets()
@@ -136,31 +152,51 @@ class Menu:
             self.root.quit()
             return
 
-        max_turns = self.max_turns_entry.get()
+        max_turns = int(self.max_turns_entry.get())
         logger.info("max_turns set = %s", max_turns)
 
         if mode == "Player vs Player":
-            self._launch_pvp()
+            self._launch_pvp(max_turns=max_turns)
         elif "AI" in mode:
-            self._launch_ai_mode(mode)
+            self._launch_ai_mode(mode, max_turns=max_turns)
 
-    def _launch_pvp(self) -> None:
+    def _launch_pvp(self, max_turns: int) -> None:
         self.root.destroy()
         root = tk.Tk()
-        PlayerVsPlayerGui(root, player1="Player", player2="Player")
-        root.mainloop()
+        engine     = GameEngine(max_turns=max_turns)
+        view       = PlayerVsPlayerGui(root, engine=engine)
+        controller = PvPController(engine=engine, view=view)
+        controller.start()
+        view.runChessGame()
 
-    def _launch_ai_mode(self, mode: str) -> None:
-        max_time  = self.max_time_entry.get()
-        heuristic = self.heuristic_var.get()
+    def _launch_ai_mode(self, mode: str, max_turns: int) -> None:
+        max_time   = float(self.max_time_entry.get())
+        heuristic  = self.heuristic_var.get()
         alpha_beta = self.alpha_beta_var.get()
         logger.info("max_time=%s | heuristic=%s | alpha_beta=%s", max_time, heuristic, alpha_beta)
 
         self.root.destroy()
         root = tk.Tk()
 
-        if mode == "Player vs AI":
-            PlayerVsAi(root)
-        # TODO: handle "AI vs Player" and "AI vs AI" here
+        engine = GameEngine(
+            max_turns=max_turns,
+            max_time=max_time,
+            heuristic_fn=HEURISTIC_MAP.get(heuristic, e0),
+            alpha_beta=alpha_beta,
+        )
 
-        root.mainloop()
+        if mode == "Player vs AI":
+            view       = PlayerVsAiGui(root, engine=engine, human_color="white")
+            controller = PvAIController(engine=engine, view=view)
+        elif mode == "AI vs Player":
+            view       = PlayerVsAiGui(root, engine=engine, human_color="black")
+            controller = PvAIController(engine=engine, view=view)
+        elif mode == "AI vs AI":
+            view       = AiVsAiGui(root, engine=engine)
+            controller = AiVsAiController(engine=engine, view=view)
+        else:
+            logger.error("Unknown AI mode: %s", mode)
+            return
+
+        controller.start()
+        view.runChessGame()
