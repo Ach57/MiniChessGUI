@@ -142,11 +142,11 @@ class SearchAlgorithm:
         self._check_timeout()
 
         # Base case: leaf node or terminal state
-        if depth == 0 or self.is_game_over_fn() is not None:
+        if depth == 0 or self.is_game_over_fn(state) is not None:
             self.cumulative_states += 1
             return self._evaluate(state), None
 
-        moves = self.valid_moves_fn()
+        moves = self.valid_moves_fn(state)
         if not moves:
             # No moves available — evaluate as terminal
             self.cumulative_states += 1
@@ -200,8 +200,8 @@ class SearchAlgorithm:
         Copy only the state dict and apply the move to the copy.
         Counts the new node for diagnostics.
         """
-        new_state = copy.deepcopy(state)       # dict only — not a whole game object
-        self.apply_move_fn(move)
+        new_state = copy.deepcopy(state)
+        self.apply_move_fn(new_state, move)  # mutates the copy, never the live engine
         self.states_by_depth[depth] += 1
         return new_state
 

@@ -21,6 +21,10 @@ class BaseChessGUI:
     
     Subclasses MUST set self.engine before calling super().__init__().
 
+    Callback slots (wired by the Controller via start()):
+        on_square_selected(x, y)          — a square was clicked with no piece selected
+        on_move_attempted(origin, dest)   — a destination square was clicked after selection
+        on_ai_turn_requested()            — human half-turn is complete; AI should move
     """
     
     def __init__(self, root: tk.Tk):
@@ -31,6 +35,10 @@ class BaseChessGUI:
             [None for _ in range(GUIC.BOARD_SIZE)]
             for _ in range(GUIC.BOARD_SIZE)
         ]
+        # Callback slots — Controller wires these in start()
+        self.on_square_selected = None
+        self.on_move_attempted  = None
+        self.on_ai_turn_requested = None
         self._build_header()
         self.turnLabel = tk.Label(self.root, text="", font=GUIC.FONT_TURN)
         self.create_board()
@@ -90,6 +98,24 @@ class BaseChessGUI:
                 btn.config(state=tk.DISABLED)
 
     # ------------------------------------------------------------------ #
+    #  UI actions — called BY the Controller, never self-triggered         #
+    # ------------------------------------------------------------------ #
+
+    def highlight_square(self, x: int, y: int) -> None:
+        self.selected_piece = (x, y)
+        self.buttons[x][y].config(highlightbackground=GUIC.BTN_SELECTED_BG)
+
+    def deselect_square(self, x: int, y: int) -> None:
+        self.selected_piece = None
+        self.buttons[x][y].config(highlightbackground=GUIC.BTN_DEFAULT_BG)
+
+    def show_error(self, message: str) -> None:
+        messagebox.showerror("Error", message)
+
+    def show_warning(self, message: str) -> None:
+        messagebox.showwarning("Warning", message)
+
+    # ------------------------------------------------------------------ #
     #  Abstract hook — subclasses MUST override                            #
     # ------------------------------------------------------------------ #
     def _make_button_command(self, i: int, j: int):
@@ -109,64 +135,22 @@ class BaseChessGUI:
 class PlayerVsPlayerGui(BaseChessGUI):
     """Human vs Human mode."""
 
-    def __init__(
-        self,
-        root: tk.Tk,  
-        max_turns: int  
-    ):        
-        self.engine = GameEngine(max_turns)    
-        super().__init__(root)   # triggers create_board via base __init__            
+    def __init__(self, root: tk.Tk, engine: GameEngine):
+        self.engine = engine
+        super().__init__(root)
     # ------------------------------------------------------------------ #
 
     def _make_button_command(self, i: int, j: int):
         return lambda x=i, y=j: self.on_click(x, y)
 
     def on_click(self, x: int, y: int) -> None:
-        """Handle piece selection and movement."""
-        piece = self.engine.state["board"][x][y]
-
+        """Forward click to the appropriate controller callback."""
         if self.selected_piece is None:
-            self._try_select(x, y, piece)
+            if self.on_square_selected:
+                self.on_square_selected(x, y)
         else:
-            self._try_move(x, y)
-
-    # ------------------------------------------------------------------ #
-    #  Private click helpers                                               #
-    # ------------------------------------------------------------------ #
-
-    def _try_select(self, x: int, y: int, piece: str) -> None:
-        """Select a piece if it belongs to the current player."""
-        if piece.startswith(self.engine.state["turn"][0]):
-            self.selected_piece = (x, y)
-            self.buttons[x][y].config(highlightbackground=GUIC.BTN_SELECTED_BG)
-        elif piece != ".":
-            messagebox.showerror("Error", "You can't move your opponent's piece.")
-    
-    def _try_move(self, x:int, y:int) -> None:
-        """Attempt to move the selected piece to (x, y)."""
-        old_x, old_y = self.selected_piece
-        
-        # Clicking the same square deselects the piece
-        if (x,y) == (old_x, old_y):
-            self.buttons[x][y].config(highlightbackground=GUIC.BTN_DEFAULT_BG)
-            self.selected_piece = None
-            return
-
-        move = ((old_x, old_y), (x, y))
-
-        if not self.engine.is_valid_move(move):      # ask the engine
-            messagebox.showwarning("Warning", "Illegal move!")
-            return
-
-        self.engine.apply_move(move)                 # engine mutates state
-        self.selected_piece = None
-
-        winner = self.engine.is_game_over()          # engine checks win
-        if winner:
-            self.update_board(winner)
-            self.disable_buttons()
-        else:
-            self.update_board(f"{self.engine.state['turn'].upper()} TURN")    
+            if self.on_move_attempted:
+                self.on_move_attempted(self.selected_piece, (x, y))
 
 
 # ─────────────────────────────────────────────
@@ -185,73 +169,31 @@ class PlayerVsAiGui(BaseChessGUI):
         self.engine = engine
         super().__init__(root)
 
-    def _make_button_command(self, i: int, j: int):        
+    def _make_button_command(self, i: int, j: int):
         return lambda x=i, y=j: self.on_click(x, y)
 
     def on_click(self, x: int, y: int) -> None:
-        """Human half-turn only — AI responds after."""
+        """Forward human clicks to controller callbacks; ignore clicks during AI's turn."""
         if self.engine.state['turn'] != self.human_color:
-            return # Ignore clicks when its AI turn
-        
-        piece = self.engine.state["board"][x][y]
-        
+            return  # Ignore clicks when it's AI's turn
         if self.selected_piece is None:
-            self._try_select(x, y, piece)
+            if self.on_square_selected:
+                self.on_square_selected(x, y)
         else:
-            self._try_human_move(x, y)
-    
-    def _try_select(self, x: int, y: int, piece: str) -> None:
-        if piece.startswith(self.engine.state["turn"][0]):
-            self.selected_piece = (x, y)
-            self.buttons[x][y].config(highlightbackground=GUIC.BTN_SELECTED_BG)
-        elif piece != ".":
-            messagebox.showerror("Error", "You can't move your opponent's piece.")
+            if self.on_move_attempted:
+                self.on_move_attempted(self.selected_piece, (x, y))
 
-    def _try_human_move(self, x: int, y: int) -> None:
-        old_x, old_y = self.selected_piece
 
-        # Deselect on same square
-        if (x, y) == (old_x, old_y):
-            self.buttons[x][y].config(highlightbackground=GUIC.BTN_DEFAULT_BG)
-            self.selected_piece = None
-            return
+# ─────────────────────────────────────────────
+#  AI vs AI
+# ─────────────────────────────────────────────
 
-        move = ((old_x, old_y), (x, y))
+class AiVsAiGui(BaseChessGUI):
+    """AI vs AI mode — board display only, no human interaction."""
 
-        if not self.engine.is_valid_move(move):
-            messagebox.showwarning("Warning", "Illegal move!")
-            return
+    def __init__(self, root: tk.Tk, engine: GameEngine):
+        self.engine = engine
+        super().__init__(root)
 
-        self.engine.apply_move(move)
-        self.selected_piece = None
-
-        winner = self.engine.is_game_over()
-        if winner:
-            self.update_board(winner)
-            self.disable_buttons()
-            return
-
-        # Human move done — hand off to AI
-        self.update_board(f"AI is thinking...")
-        self.root.after(100, self.on_ai_turn_requested)  # 100ms lets the UI repaint
-    
-    def on_ai_turn_requested(self) -> None:
-        """
-        Callback slot — wired by the Controller after construction.
-        Default is a no-op; Controller replaces it with the real handler.
-        """
-        pass
-
-    
-    def _trigger_ai_move(self) -> None:
-        """Ask the search algorithm for a move and apply it."""
-        # TODO: replace with real search call
-        # ai_move = search.get_best_move(self.engine, self.engine.heuristic, self.engine.alpha_beta)
-        # self.engine.apply_move(ai_move)
-
-        winner = self.engine.is_game_over()
-        if winner:
-            self.update_board(winner)
-            self.disable_buttons()
-        else:
-            self.update_board(f"{self.engine.state['turn'].upper()} TURN")
+    def _make_button_command(self, i: int, j: int):
+        return None  # No human interaction
