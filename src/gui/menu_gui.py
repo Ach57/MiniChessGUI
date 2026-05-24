@@ -5,14 +5,12 @@ from tkinter import ttk
 from tkinter import messagebox
 
 from .chess_gui import PlayerVsPlayerGui, PlayerVsAiGui, AiVsAiGui
-from src.Logger.mini_chess_logger import Logger
+from src.Logger import MiniChessLogger
 from src.constants.menu import MenuConstants as MC
 from src.controller.game_controller import PvPController, PvAIController, AiVsAiController
 from src.engine.game_engine import GameEngine
 from src.heuristics import HEURISTIC_MAP, e0
 
-
-logger = Logger().get_logger()
 
 class Menu:
     """Main menu window for Mini Chess Game."""
@@ -148,12 +146,11 @@ class Menu:
         mode = self.mode_var.get()
 
         if mode == "Exit":
-            logger.info("Game exited from menu")
+            MiniChessLogger.get_instance().info("Game exited from menu") if MiniChessLogger._instance else None
             self.root.quit()
             return
 
         max_turns = int(self.max_turns_entry.get())
-        logger.info("max_turns set = %s", max_turns)
 
         if mode == "Player vs Player":
             self._launch_pvp(max_turns=max_turns)
@@ -161,6 +158,13 @@ class Menu:
             self._launch_ai_mode(mode, max_turns=max_turns)
 
     def _launch_pvp(self, max_turns: int) -> None:
+        MiniChessLogger.configure(
+            alpha_beta=False,
+            timeout=0,
+            max_turns=max_turns,
+            player1_type="Human",
+            player2_type="Human",
+        )
         self.root.destroy()
         root = tk.Tk()
         engine     = GameEngine(max_turns=max_turns)
@@ -173,7 +177,21 @@ class Menu:
         max_time   = float(self.max_time_entry.get())
         heuristic  = self.heuristic_var.get()
         alpha_beta = self.alpha_beta_var.get()
-        logger.info("max_time=%s | heuristic=%s | alpha_beta=%s", max_time, heuristic, alpha_beta)
+
+        player1_type = "Human" if mode == "Player vs AI" else "AI"
+        player2_type = "Human" if mode == "AI vs Player" else "AI"
+        MiniChessLogger.configure(
+            alpha_beta=alpha_beta,
+            timeout=int(max_time),
+            max_turns=max_turns,
+            player1_type=player1_type,
+            player2_type=player2_type,
+            heuristic1=heuristic if player1_type == "AI" else None,
+            heuristic2=heuristic if player2_type == "AI" else None,
+        )
+        MiniChessLogger.get_instance().info(
+            "max_time=%s | heuristic=%s | alpha_beta=%s", max_time, heuristic, alpha_beta
+        )
 
         self.root.destroy()
         root = tk.Tk()
@@ -195,7 +213,7 @@ class Menu:
             view       = AiVsAiGui(root, engine=engine)
             controller = AiVsAiController(engine=engine, view=view)
         else:
-            logger.error("Unknown AI mode: %s", mode)
+            MiniChessLogger.get_instance().error("Unknown AI mode: %s", mode)
             return
 
         controller.start()

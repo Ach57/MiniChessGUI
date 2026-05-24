@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 from src.SearchAlgorithm.search import SearchAlgorithm
-from src.Logger.mini_chess_logger import Logger
+from src.Logger import MiniChessLogger
 from typing import TYPE_CHECKING
 import copy
 
 if TYPE_CHECKING:
     from src.engine.game_engine import GameEngine
     from src.gui.chess_gui import BaseChessGUI
-
-logger = Logger().get_logger()
 
 class GameController:
     """
@@ -20,7 +18,8 @@ class GameController:
     """
     def __init__(self, engine: GameEngine, view: BaseChessGUI):
         self.engine = engine
-        self.view = view        
+        self.view = view
+        self.logger = MiniChessLogger.get_instance()
     
     # ------------------------------------------------------------------ #
     #  Abstract hook                                                       #
@@ -40,13 +39,13 @@ class GameController:
         Returns True if the game is now over.
         """
         self.engine.apply_move(move)
-        logger.info("Move applied: %s", move)
+        self.logger.info("Move applied: %s", move)
 
         winner = self.engine.is_game_over()
         if winner:
             self.view.update_board(winner)
             self.view.disable_buttons()
-            logger.info("Game over: %s", winner)
+            self.logger.log_winner(winner)
             return True
 
         self.view.update_board(f"{self.engine.state['turn'].upper()} TURN")
@@ -139,13 +138,19 @@ class PvAIController(GameController):
         )
 
         score, best_move, time_spent = search.search_best_move(depth=3)
-        logger.info("AI move: %s | score: %s | time: %.2fs", best_move, score, time_spent)
+        self.logger.info("AI move: %s | score: %s | time: %.2fs", best_move, score, time_spent)
 
         if best_move is None:
             self.view.update_board("AI has no moves. Game over.")
             self.view.disable_buttons()
             return
 
+        self.logger.log_move(
+            player=self.engine.state["turn"],
+            move=best_move,
+            ai_time=time_spent,
+            heuristic_score=score,
+        )
         self._apply_and_refresh(best_move)
 
 # ─────────────────────────────────────────────
@@ -173,13 +178,19 @@ class AiVsAiController(GameController):
         )
 
         score, best_move, time_spent = search.search_best_move(depth=3)
-        logger.info("AI move: %s | score: %s | time: %.2fs", best_move, score, time_spent)
+        self.logger.info("AI move: %s | score: %s | time: %.2fs", best_move, score, time_spent)
 
         if best_move is None:
             self.view.update_board("No moves available. Game over.")
             self.view.disable_buttons()
             return
 
+        self.logger.log_move(
+            player=self.engine.state["turn"],
+            move=best_move,
+            ai_time=time_spent,
+            heuristic_score=score,
+        )
         game_over = self._apply_and_refresh(best_move)
 
         if not game_over:
