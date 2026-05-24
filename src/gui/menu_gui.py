@@ -27,11 +27,14 @@ class Menu:
     
     def _build(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title(MC.TITLE)
+        self._build_title(MC.TITLE)
         self._build_header()
         self._build_mode_selector()
         self._build_ai_options()   # creates widgets but hides them
         self._build_start_button()
+    
+    def _build_title(self, game_title: str):
+        self.root.title(game_title)
     
     def _build_header(self) -> None:        
         tk.Label(
@@ -103,12 +106,7 @@ class Menu:
         """Show or hide optional fields depending on the selected game mode."""
         self._hide_all_ai_widgets()
         mode = self.mode_var.get()
-        
-        # Show message to use that they can't use this section for now
-        if mode =="AI vs Player" or mode =="AI vs AI":
-            messagebox.showinfo("Info", "To be determined in future releases...")
-            return
-
+            
         if "AI" in mode:
             self._show_ai_widgets()
         elif mode == "Player vs Player":

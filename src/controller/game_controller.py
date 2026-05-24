@@ -91,11 +91,16 @@ class PvPController(GameController):
 class PvAIController(GameController):
 
     def start(self) -> None:
-        self.view.on_square_selected  = self._handle_select
-        self.view.on_move_attempted   = self._handle_move
+        self.view.on_square_selected   = self._handle_select
+        self.view.on_move_attempted    = self._handle_move
         self.view.on_ai_turn_requested = self._handle_ai_turn
 
-    
+        # If the AI moves first (e.g. "AI vs Player" where human is black),
+        # kick off the first AI turn immediately instead of waiting for a click
+        # that will never come (the view blocks clicks when it's not human's turn).
+        if self.engine.state["turn"] != self.view.human_color:
+            self.view.root.after(100, self._handle_ai_turn)
+
     def _handle_select(self, x: int, y: int) -> None:
         piece = self.engine.state["board"][x][y]
         turn  = self.engine.state["turn"]
