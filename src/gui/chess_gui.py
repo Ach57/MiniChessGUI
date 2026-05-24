@@ -54,6 +54,9 @@ class BaseChessGUI:
     #  UI builders                                                         #
     # ------------------------------------------------------------------ #
     
+    def _build_title(self, game_title:str):
+        self.root.title(game_title)
+    
     def _build_header(self) -> None:
         tk.Label(
             master=self.root, text=GUIC.HEADER_TEXT, font= GUIC.FONT_HEADER

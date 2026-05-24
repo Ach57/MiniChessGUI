@@ -1,0 +1,32 @@
+2026-05-24 17:53:02 - [INFO] - Mini Chess game trace initialized
+========================================
+Mini Chess Game Trace
+========================================
+Alpha-Beta Pruning : OFF
+Timeout per move   : 10 seconds
+Max turns          : 130
+Player 1           : Human
+Player 2           : AI (Alpha-Beta ON, Heuristic: e1)
+
+Initial Board Configuration:
+2026-05-24 17:53:02 - [INFO] - max_time=10.0 | heuristic=e1 | alpha_beta=False
+2026-05-24 17:53:05 - [INFO] - Move applied: ((3, 1), (2, 1))
+2026-05-24 17:53:05 - [INFO] - AI move: ((0, 1), (1, 1)) | score: -5 | time: 0.07s
+2026-05-24 17:53:05 - [INFO] - Turn #  1 | black  → B5 to B4
+Turn #1: black moves B5 to B4
+  AI move time       : 0.070 sec
+  Heuristic Score    : -5
+
+2026-05-24 17:53:05 - [INFO] - Move applied: ((0, 1), (1, 1))
+2026-05-24 17:53:07 - [INFO] - Move applied: ((2, 1), (1, 2))
+2026-05-24 17:53:07 - [INFO] - AI move: ((1, 1), (4, 4)) | score: -988 | time: 0.08s
+2026-05-24 17:53:07 - [INFO] - Turn #  2 | black  → B4 to E1
+Turn #2: black moves B4 to E1
+  AI move time       : 0.081 sec
+  Heuristic Score    : -988
+
+2026-05-24 17:53:07 - [INFO] - Move applied: ((1, 1), (4, 4))
+2026-05-24 17:53:07 - [INFO] - Game Over — Black wins! White's King is captured. wins in 1 turns!
+========================================
+Game Over: Black wins! White's King is captured. wins in 1 turns
+========================================

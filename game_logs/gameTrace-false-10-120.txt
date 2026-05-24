@@ -1,0 +1,103 @@
+2026-05-24 18:17:44 - [INFO] - Mini Chess game trace initialized
+========================================
+Mini Chess Game Trace
+========================================
+Alpha-Beta Pruning : OFF
+Timeout per move   : 10 seconds
+Max turns          : 120
+Player 1           : AI (Alpha-Beta ON, Heuristic: e1)
+Player 2           : Human
+
+Initial Board Configuration:
+2026-05-24 18:17:44 - [INFO] - max_time=10.0 | heuristic=e1 | alpha_beta=False
+2026-05-24 18:17:44 - [INFO] - AI move: ((4, 3), (3, 3)) | score: 5 | time: 0.04s
+2026-05-24 18:17:44 - [INFO] - Turn #  1 | white  → D1 to D2
+Turn #1: white moves D1 to D2
+  AI move time       : 0.040 sec
+  Heuristic Score    : 5
+
+2026-05-24 18:17:44 - [INFO] - Move applied: ((4, 3), (3, 3))
+2026-05-24 18:17:53 - [INFO] - Move applied: ((0, 1), (1, 1))
+2026-05-24 18:17:54 - [INFO] - AI move: ((3, 2), (2, 2)) | score: 9 | time: 0.04s
+2026-05-24 18:17:54 - [INFO] - Turn #  2 | white  → C2 to C3
+Turn #2: white moves C2 to C3
+  AI move time       : 0.043 sec
+  Heuristic Score    : 9
+
+2026-05-24 18:17:54 - [INFO] - Move applied: ((3, 2), (2, 2))
+2026-05-24 18:18:00 - [INFO] - Move applied: ((1, 3), (2, 2))
+2026-05-24 18:18:00 - [INFO] - AI move: ((3, 3), (3, 2)) | score: 3 | time: 0.05s
+2026-05-24 18:18:00 - [INFO] - Turn #  3 | white  → D2 to C2
+Turn #3: white moves D2 to C2
+  AI move time       : 0.053 sec
+  Heuristic Score    : 3
+
+2026-05-24 18:18:00 - [INFO] - Move applied: ((3, 3), (3, 2))
+2026-05-24 18:18:10 - [INFO] - Move applied: ((0, 2), (1, 3))
+2026-05-24 18:18:11 - [INFO] - AI move: ((3, 1), (2, 2)) | score: 7 | time: 0.09s
+2026-05-24 18:18:11 - [INFO] - Turn #  4 | white  → B2 to C3
+Turn #4: white moves B2 to C3
+  AI move time       : 0.090 sec
+  Heuristic Score    : 7
+
+2026-05-24 18:18:11 - [INFO] - Move applied: ((3, 1), (2, 2))
+2026-05-24 18:18:18 - [INFO] - Move applied: ((1, 3), (2, 2))
+2026-05-24 18:18:19 - [INFO] - AI move: ((4, 1), (2, 2)) | score: 6 | time: 0.08s
+2026-05-24 18:18:19 - [INFO] - Turn #  5 | white  → B1 to C3
+Turn #5: white moves B1 to C3
+  AI move time       : 0.084 sec
+  Heuristic Score    : 6
+
+2026-05-24 18:18:19 - [INFO] - Move applied: ((4, 1), (2, 2))
+2026-05-24 18:18:22 - [INFO] - Move applied: ((1, 1), (2, 2))
+2026-05-24 18:18:22 - [INFO] - AI move: ((4, 2), (3, 3)) | score: 5 | time: 0.08s
+2026-05-24 18:18:22 - [INFO] - Turn #  6 | white  → C1 to D2
+Turn #6: white moves C1 to D2
+  AI move time       : 0.081 sec
+  Heuristic Score    : 5
+
+2026-05-24 18:18:22 - [INFO] - Move applied: ((4, 2), (3, 3))
+2026-05-24 18:18:45 - [INFO] - Move applied: ((2, 2), (1, 1))
+2026-05-24 18:18:45 - [INFO] - AI move: ((3, 3), (1, 1)) | score: 14 | time: 0.07s
+2026-05-24 18:18:45 - [INFO] - Turn #  7 | white  → D2 to B4
+Turn #7: white moves D2 to B4
+  AI move time       : 0.065 sec
+  Heuristic Score    : 14
+
+2026-05-24 18:18:45 - [INFO] - Move applied: ((3, 3), (1, 1))
+2026-05-24 18:18:47 - [INFO] - Move applied: ((0, 0), (1, 1))
+2026-05-24 18:18:47 - [INFO] - AI move: ((3, 2), (3, 1)) | score: 6 | time: 0.05s
+2026-05-24 18:18:47 - [INFO] - Turn #  8 | white  → C2 to B2
+Turn #8: white moves C2 to B2
+  AI move time       : 0.055 sec
+  Heuristic Score    : 6
+
+2026-05-24 18:18:47 - [INFO] - Move applied: ((3, 2), (3, 1))
+2026-05-24 18:18:51 - [INFO] - Move applied: ((1, 1), (0, 2))
+2026-05-24 18:18:51 - [INFO] - AI move: ((3, 1), (0, 4)) | score: 7 | time: 0.04s
+2026-05-24 18:18:51 - [INFO] - Turn #  9 | white  → B2 to E5
+Turn #9: white moves B2 to E5
+  AI move time       : 0.037 sec
+  Heuristic Score    : 7
+
+2026-05-24 18:18:51 - [INFO] - Move applied: ((3, 1), (0, 4))
+2026-05-24 18:18:57 - [INFO] - Move applied: ((0, 2), (1, 1))
+2026-05-24 18:18:57 - [INFO] - AI move: ((0, 4), (1, 3)) | score: 14 | time: 0.03s
+2026-05-24 18:18:57 - [INFO] - Turn # 10 | white  → E5 to D4
+Turn #10: white moves E5 to D4
+  AI move time       : 0.032 sec
+  Heuristic Score    : 14
+
+2026-05-24 18:18:57 - [INFO] - Move applied: ((0, 4), (1, 3))
+2026-05-24 18:19:00 - [INFO] - Move applied: ((1, 1), (2, 2))
+2026-05-24 18:19:00 - [INFO] - AI move: ((1, 3), (2, 2)) | score: 1013 | time: 0.03s
+2026-05-24 18:19:00 - [INFO] - Turn # 11 | white  → D4 to C3
+Turn #11: white moves D4 to C3
+  AI move time       : 0.032 sec
+  Heuristic Score    : 1013
+
+2026-05-24 18:19:00 - [INFO] - Move applied: ((1, 3), (2, 2))
+2026-05-24 18:19:00 - [INFO] - Game Over — White wins! Black's King is captured. wins in 5 turns!
+========================================
+Game Over: White wins! Black's King is captured. wins in 5 turns
+========================================

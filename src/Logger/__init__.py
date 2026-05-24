@@ -6,3 +6,4 @@
  ----------------------------------------------------------------------------------
 
 '''
+from src.Logger.mini_chess_logger import MiniChessLogger
